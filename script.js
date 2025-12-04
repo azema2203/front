@@ -53,7 +53,6 @@ function register() {
     currentUser = { username, ...users[username] };
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
-    // ДОБАВЬ ЭТИ 2 СТРОКИ:
     document.getElementById('regUsername').value = '';
     document.getElementById('regPassword').value = '';
     
@@ -141,7 +140,6 @@ function backToDashboard() {
         matchTimer = null;
     }
     
-    // Удаляем элемент таймера, если он был создан
     const timerElement = document.querySelector('.timer');
     if (timerElement) {
         timerElement.remove();
@@ -169,7 +167,6 @@ function drawWheel(rotation) {
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Начинаем рисовать сверху (-90 градусов)
     const startOffset = -Math.PI / 2;
     
     segments.forEach((seg, i) => {
@@ -187,7 +184,6 @@ function drawWheel(rotation) {
         ctx.lineWidth = 3;
         ctx.stroke();
         
-        // Текст на сегментах
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(startAngle + anglePerSegment / 2);
@@ -199,7 +195,6 @@ function drawWheel(rotation) {
         ctx.restore();
     });
     
-    // Центральный круг
     ctx.beginPath();
     ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
@@ -208,7 +203,6 @@ function drawWheel(rotation) {
     ctx.lineWidth = 5;
     ctx.stroke();
     
-    // Текст в центре
     ctx.fillStyle = '#ff69b4';
     ctx.font = 'bold 20px Quicksand';
     ctx.textAlign = 'center';
@@ -241,14 +235,11 @@ function spinWheel() {
     const segmentsCount = segments.length;
     const anglePerSegment = 360 / segmentsCount;
     
-    // Выбираем случайный выигрышный сегмент
     const winningIndex = Math.floor(Math.random() * segmentsCount);
     const coins = segments[winningIndex];
-    
-    // Рассчитываем угол для остановки
+   
     const targetAngleDeg = 360 - (winningIndex * anglePerSegment + anglePerSegment / 2);
-    
-    // Несколько полных оборотов + целевой угол
+  
     const fullSpins = 5;
     const totalAngleDeg = fullSpins * 360 + targetAngleDeg;
     
@@ -259,7 +250,6 @@ function spinWheel() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
         
-        // Плавное замедление
         const easeOut = 1 - Math.pow(1 - progress, 3);
         const currentRotation = totalAngleDeg * Math.PI / 180 * easeOut;
         
@@ -271,19 +261,15 @@ function spinWheel() {
             setTimeout(() => {
                 canvas.classList.remove('wheel-spinning');
                 
-                // Начисляем выигрыш
                 if (currentUser) {
                     currentUser.coins += coins;
                     currentUser.lastSpin = new Date().toDateString();
                     saveUserData();
-                    
-                    // Обновляем отображение монет
+                   
                     document.getElementById('coinsDisplay').textContent = currentUser.coins;
-                    
-                    // ПОКАЗЫВАЕМ ALERT С ВЫИГРЫШЕМ
+                   
                     alert(`🎉 Ты выиграл ${coins} монет!`);
-                    
-                    // Создаем конфетти
+                
                     createConfetti();
                 }
                 
@@ -392,12 +378,12 @@ function startGame(game) {
     showScreen('gameScreen');
     
     const titles = {
-        dino: 'Милый Раннер',
-        snake: 'Волшебная Змейка',
-        collect: 'Собери Сладости',
-        jump: 'Прыжки по Звёздам',
-        match: 'Найди Пару',
-        catch: 'Лови Шарики'
+        dino: 'Go Dino, go',
+        snake: 'Snake',
+        collect: 'Collect sweets',
+        jump: 'Star Jump',
+        match: 'Match pairs',
+        catch: 'Catch balloons'
     };
     
     const instructions = {
@@ -413,7 +399,6 @@ function startGame(game) {
     document.getElementById('gameInstructions').textContent = instructions[game];
     document.getElementById('currentScore').textContent = '0';
     
-    // Очищаем предыдущий таймер
     if (matchTimer) {
         clearInterval(matchTimer);
         matchTimer = null;
@@ -689,7 +674,6 @@ function runJumpGame() {
     let clouds = [];
     let gameRunning = true;
     
-    // Создаём начальные звёзды (облака)
     for (let i = 0; i < 8; i++) {
         clouds.push({
             x: Math.random() * (canvas.width - 80),
@@ -699,7 +683,6 @@ function runJumpGame() {
         });
     }
     
-    // Помещаем игрока на самую нижнюю звезду
     const bottomCloud = clouds[clouds.length - 1];
     if (bottomCloud) {
         player.x = bottomCloud.x + 20;
@@ -799,7 +782,6 @@ function runMatchGame() {
     let canClick = true;
     let gameRunning = true;
     
-    // Таймер 60 секунд - ОСТАВИТЬ!
     matchTimeLeft = 60;
     const timerElement = document.createElement('div');
     timerElement.className = 'timer';
@@ -854,7 +836,7 @@ function runMatchGame() {
                     if (matches === 6) {
                         gameRunning = false;
                         clearInterval(matchTimer);
-                        gameOver(score + matchTimeLeft * 5); // Бонус за оставшееся время
+                        gameOver(score + matchTimeLeft * 5); 
                         }
                 } else {
                     revealed[first] = false;
