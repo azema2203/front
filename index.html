@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pink Games 💕</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="screen active" id="loginScreen">
+        <div class="login-container">
+            <h1>💕 Pink Games 💕</h1>
+            <div id="loginForm">
+                <input type="text" id="loginUsername" placeholder="Имя пользователя">
+                <input type="password" id="loginPassword" placeholder="Пароль">
+                <button onclick="login()">Войти</button>
+                <button class="switch-btn" onclick="switchToRegister()">Регистрация</button>
+            </div>
+            <div id="registerForm" style="display: none;">
+                <input type="text" id="regUsername" placeholder="Имя пользователя">
+                <input type="password" id="regPassword" placeholder="Пароль">
+                <button onclick="register()">Зарегистрироваться</button>
+                <button class="switch-btn" onclick="switchToLogin()">Уже есть аккаунт</button>
+            </div>
+            <p class="error" id="authError"></p>
+        </div>
+    </div>
+
+    <div class="screen" id="dashboardScreen">
+        <div class="dashboard">
+            <div class="welcome-banner" id="welcomeBanner">
+                <h2>Добро пожаловать, <span id="usernameDisplay"></span>! 💕</h2>
+            </div>
+            
+            <div class="user-info">
+                <div class="coins">🪙 <span id="coinsDisplay">0</span> монет</div>
+                <div class="btn-group">
+                    <button class="small-btn" onclick="showProfile()">Профиль</button>
+                    <button class="small-btn" onclick="logout()">Выйти</button>
+                </div>
+            </div>
+            
+            <div class="wheel-container">
+                <h3>🎡 Колесо Фортуны</h3>
+                <p>Крути раз в день и получай монетки!</p>
+                <div class="wheel-wrapper">
+                    <div class="wheel-arrow">▼</div>
+                    <canvas id="wheelCanvas" width="350" height="350"></canvas>
+                </div>
+                <button id="spinBtn" onclick="spinWheel()">Крутить!</button>
+                <p id="wheelMessage"></p>
+            </div>
+            
+            <h2 style="text-align: center; color: #ff69b4; margin: 40px 0 20px 0;">🎮 Выбери игру</h2>
+            <div class="games-grid">
+                <div class="game-card" onclick="startGame('dino')">
+                    <div class="game-icon">🦖</div>
+                    <h3>Go Dino, Go</h3>
+                    <p>Рекорд: <span id="score-dino">0</span></p>
+                </div>
+                <div class="game-card" onclick="startGame('snake')">
+                    <div class="game-icon">🐍</div>
+                    <h3>Snake</h3>
+                    <p>Рекорд: <span id="score-snake">0</span></p>
+                </div>
+                <div class="game-card" onclick="startGame('collect')">
+                    <div class="game-icon">🍰</div>
+                    <h3>Collect sweets</h3>
+                    <p>Рекорд: <span id="score-collect">0</span></p>
+                </div>
+                <div class="game-card" onclick="startGame('jump')">
+                    <div class="game-icon">⭐</div>
+                    <h3>Star Jump</h3>
+                    <p>Рекорд: <span id="score-jump">0</span></p>
+                </div>
+                <div class="game-card" onclick="startGame('match')">
+                    <div class="game-icon">💝</div>
+                    <h3>Match pairs</h3>
+                    <p>Рекорд: <span id="score-match">0</span></p>
+                </div>
+                <div class="game-card" onclick="startGame('catch')">
+                    <div class="game-icon">🎈</div>
+                    <h3>Cath balloons</h3>
+                    <p>Рекорд: <span id="score-catch">0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="screen" id="gameScreen">
+        <div class="game-screen">
+            <div class="game-header">
+                <button class="small-btn" onclick="backToDashboard()">⬅ Назад</button>
+                <h2 id="gameTitle">Игра</h2>
+                <div>Счёт: <span id="currentScore">0</span></div>
+            </div>
+            <div class="game-canvas-container">
+                <canvas id="gameCanvas" width="600" height="400"></canvas>
+                <div class="game-controls">
+                    <p id="gameInstructions"></p>
+                    <button onclick="restartCurrentGame()">Начать заново</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="screen" id="profileScreen">
+        <div class="profile-container">
+            <button class="small-btn" onclick="backToDashboard()">⬅ Назад</button>
+            <h1 style="text-align: center; margin: 20px 0;">👤 Профиль</h1>
+            
+            <h3>Сменить имя:</h3>
+            <input type="text" id="newUsername" placeholder="Новое имя">
+            <button onclick="changeName()">Изменить</button>
+            
+            <h3 style="margin-top: 30px;">🎨 Скины (Монет: <span id="profileCoins">0</span>)</h3>
+            <div class="skins-grid">
+                <div class="skin-card selected" data-skin="kitten" onclick="selectSkin('kitten', 0)">
+                    <div class="skin-icon">🐱</div>
+                    <p>Kitty</p>
+                    <p><strong>Бесплатно</strong></p>
+                </div>
+                <div class="skin-card locked" data-skin="princess" onclick="selectSkin('princess', 100)">
+                    <div class="skin-icon">👸</div>
+                    <p>Princess</p>
+                    <p><strong>100 🪙</strong></p>
+                </div>
+                <div class="skin-card locked" data-skin="prince" onclick="selectSkin('prince', 100)">
+                    <div class="skin-icon">🤴</div>
+                    <p>Prince</p>
+                    <p><strong>100 🪙</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
