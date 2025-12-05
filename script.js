@@ -378,7 +378,7 @@ function startGame(game) {
     showScreen('gameScreen');
     
     const titles = {
-        dino: 'Go Dino, go',
+        dino: 'Go Dino, Go',
         snake: 'Snake',
         collect: 'Collect sweets',
         jump: 'Star Jump',
@@ -390,7 +390,7 @@ function startGame(game) {
         dino: 'Нажми ПРОБЕЛ чтобы прыгать! Избегай сладости',
         snake: 'Используй стрелки для управления, собирай кексики',
         collect: 'Двигай мышкой, собирай сладости, избегай бомбочек 💣',
-        jump: 'Кликай чтобы прыгать со звезды на звезду',
+        jump: 'Двигай мышкой чтобы ловить звезду ⭐',
         match: 'Найди все пары карточек за 60 секунд!',
         catch: 'Лови шарики мышкой, у тебя 3 жизни!'
     };
@@ -597,6 +597,7 @@ function runSnakeGame() {
     
     gameInterval = setInterval(update, 150);
 }
+
 function runCollectGame() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -670,31 +671,63 @@ function runJumpGame() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let score = 0;
-    let player = { x: 100, y: 350, vy: 0, jumping: false, w: 40, h: 40 };
-    let clouds = [];
     let gameRunning = true;
+    let combo = 0;
+    let maxCombo = 0;
+    let lastDifficultyIncrease = 0; 
     
-    for (let i = 0; i < 8; i++) {
-        clouds.push({
-            x: Math.random() * (canvas.width - 80),
-            y: 350 - i * 50,
-            w: 80,
-            h: 20
-        });
-    }
+    let platform = {
+        x: canvas.width / 2 - 80,
+        y: canvas.height - 50,
+        w: 160,
+        h: 20,
+        color: '#ff69b4',
+        glow: false
+    };
     
-    const bottomCloud = clouds[clouds.length - 1];
-    if (bottomCloud) {
-        player.x = bottomCloud.x + 20;
-        player.y = bottomCloud.y - 40;
-    }
+    let star = {
+        x: canvas.width / 2 - 20,
+        y: canvas.height - 150,
+        w: 40,
+        h: 40,
+        vx: 3,
+        vy: -12,
+        gravity: 0.5,
+        bounce: 0.88,
+        wallBounce: 0.7,
+        rotation: 0,
+        glow: true
+    };
     
-    canvas.addEventListener('click', () => {
-        if (gameRunning && !player.jumping) {
-            player.vy = -12;
-            player.jumping = true;
+    let particles = [];
+    
+    canvas.addEventListener('mousemove', (e) => {
+        if (!gameRunning) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        
+        platform.x = mouseX - platform.w / 2;
+        
+        if (platform.x < 0) platform.x = 0;
+        if (platform.x > canvas.width - platform.w) {
+            platform.x = canvas.width - platform.w;
         }
     });
+    
+    function createParticles(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                size: Math.random() * 4 + 2,
+                color: color,
+                life: 30
+            });
+        }
+    }
     
     function update() {
         if (!gameRunning) return;
@@ -702,66 +735,162 @@ function runJumpGame() {
         ctx.fillStyle = '#fff0f5';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        player.vy += 0.5;
-        player.y += player.vy;
-        
-        if (player.x < 0) player.x = 0;
-        if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
-        
-        if (player.y > canvas.height) {
-            gameRunning = false;
-            gameOver(score);
-            return;
-        }
-        
-        clouds.forEach((cloud, i) => {
-            cloud.y += 1;
+        particles.forEach((p, i) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2;
+            p.life--;
             
-            ctx.fillStyle = '#fffacd';
-            ctx.beginPath();
-            ctx.arc(cloud.x + 40, cloud.y + 10, 25, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            
-            ctx.fillStyle = '#ffd700';
-            ctx.font = '30px Arial';
-            ctx.fillText('⭐', cloud.x + 25, cloud.y + 20);
-            
-            if (player.vy > 0 && 
-                player.x + player.w > cloud.x && player.x < cloud.x + cloud.w &&
-                player.y + player.h >= cloud.y && player.y <= cloud.y + cloud.h) {
-                player.y = cloud.y - player.h;
-                player.vy = 0;
-                player.jumping = false;
-                score++;
-                updateScore(score);
-                
-                if (i === 0) {
-                    clouds.push({
-                        x: Math.random() * (canvas.width - 80),
-                        y: -50,
-                        w: 80,
-                        h: 20
-                    });
-                }
-            }
-            
-            if (cloud.y > canvas.height + 50) {
-                clouds.splice(i, 1);
-                clouds.unshift({
-                    x: Math.random() * (canvas.width - 80),
-                    y: -50,
-                    w: 80,
-                    h: 20
-                });
+            if (p.life <= 0) {
+                particles.splice(i, 1);
             }
         });
         
+        star.vy += star.gravity;
+        star.y += star.vy;
+        star.x += star.vx;
+        star.rotation += 0.08;
+      
+        if (star.x + star.w >= canvas.width) {
+            star.x = canvas.width - star.w;
+            star.vx = -Math.abs(star.vx) * star.wallBounce; 
+            createParticles(star.x + star.w, star.y + star.h/2, '#FFD700', 10);
+            combo++;
+        }
+        
+        if (star.x <= 0) {
+            star.x = 0;
+            star.vx = Math.abs(star.vx) * star.wallBounce; 
+            createParticles(star.x, star.y + star.h/2, '#FFD700', 10);
+            combo++;
+        }
+        
+        if (star.y <= 0) {
+            star.y = 0;
+            star.vy = Math.abs(star.vy) * star.wallBounce; 
+            createParticles(star.x + star.w/2, star.y, '#FFD700', 10);
+            combo++;
+            
+            if (combo > maxCombo) maxCombo = combo;
+        }
+        
+        
+        if (star.y + star.h >= platform.y && 
+            star.y <= platform.y + platform.h &&
+            star.x + star.w >= platform.x && 
+            star.x <= platform.x + platform.w &&
+            star.vy > 0) { 
+            
+            const platformCenter = platform.x + platform.w / 2;
+            const starCenter = star.x + star.w / 2;
+            const hitPosition = (starCenter - platformCenter) / (platform.w / 2);
+            
+            star.vy = -15 * star.bounce;
+            
+            star.vx += hitPosition * 6;
+            
+            if (Math.abs(star.vx) > 8) star.vx = 8 * Math.sign(star.vx);
+           
+            score++;
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            updateScore(score);
+            
+            platform.glow = true;
+            star.glow = true;
+            createParticles(star.x + star.w/2, star.y + star.h, '#ff69b4', 15);
+            
+            setTimeout(() => {
+                platform.glow = false;
+                star.glow = false;
+            }, 150);
+            
+            if (score > 0 && score % 10 === 0 && score !== lastDifficultyIncrease) {
+                lastDifficultyIncrease = score;
+                
+                star.gravity += 0.08;
+                
+                star.bounce *= 0.96;
+                
+                star.vx *= 1.15;
+                
+                if (platform.w > 100) {
+                    platform.w -= 5;
+                }
+                
+                createParticles(canvas.width / 2, canvas.height / 2, '#ff1493', 30);
+                
+                ctx.fillStyle = '#ff1493';
+                ctx.font = 'bold 40px Quicksand';
+                ctx.textAlign = 'center';
+                ctx.fillText('УРОВЕНЬ ВЫШЕ! 🔥', canvas.width / 2, canvas.height / 2);
+            }
+        }
+       
+        if (star.y > canvas.height) {
+            gameRunning = false;
+            setTimeout(() => {
+                gameOver(score);
+            }, 100);
+            return;
+        }
+        
+        particles.forEach(p => {
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life / 30;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+        
+        if (platform.glow) {
+            ctx.shadowColor = '#ff1493';
+            ctx.shadowBlur = 20;
+        }
+        
+        ctx.fillStyle = platform.color;
+        ctx.beginPath();
+        ctx.roundRect(platform.x, platform.y, platform.w, platform.h, 10);
+        ctx.fill();
+        
+        ctx.shadowBlur = 0;
+        
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.translate(star.x + star.w/2, star.y + star.h/2);
+        ctx.rotate(star.rotation);
+        
+        if (star.glow) {
+            ctx.shadowColor = '#FFD700';
+            ctx.shadowBlur = 25;
+        }
+        
         ctx.font = '40px Arial';
-        ctx.fillText(getSkinEmoji(), player.x, player.y + 40);
+        ctx.fillStyle = '#FFD700';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⭐', 0, 0);
+        
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(getSkinEmoji(), platform.x + platform.w/2, platform.y - 25);
+        
+        const level = Math.floor(score / 10) + 1;
+        ctx.fillStyle = '#ff69b4';
+        ctx.font = 'bold 20px Quicksand';
+        ctx.textAlign = 'left';
+        ctx.fillText(`Уровень: ${level}`, 10, 30);
+        
+        if (star.vy < 2 && star.vy > -2) {
+            combo = 0;
+        }
         
         if (gameRunning) {
             requestAnimationFrame(update);
@@ -770,35 +899,57 @@ function runJumpGame() {
     
     update();
 }
+
 function runMatchGame() {
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const symbols = ['💕', '🎀', '🌸', '⭐', '🍰', '🧁'];
-    let cards = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
+
+    let cards = [];
+    symbols.forEach(symbol => {
+        cards.push(symbol);
+        cards.push(symbol);
+    });
+    
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    
     let revealed = Array(12).fill(false);
     let first = null, second = null;
     let score = 0;
     let matches = 0;
     let canClick = true;
     let gameRunning = true;
-    
+  
     matchTimeLeft = 60;
     const timerElement = document.createElement('div');
     timerElement.className = 'timer';
-    timerElement.textContent = `Время: ${matchTimeLeft} сек`;
+    timerElement.style.cssText = `
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #ff1493;
+        margin: 15px 0;
+        padding: 10px;
+        background: #fff0f5;
+        border-radius: 10px;
+        border: 2px solid #ff69b4;
+    `;
+    timerElement.textContent = `⏰ Время: ${matchTimeLeft} сек`;
     document.querySelector('.game-canvas-container').insertBefore(timerElement, document.querySelector('.game-controls'));
     
     matchTimer = setInterval(() => {
         if (!gameRunning) return;
         
         matchTimeLeft--;
-        timerElement.textContent = `Время: ${matchTimeLeft} сек`;
+        timerElement.textContent = `⏰ Время: ${matchTimeLeft} сек`;
         
         if (matchTimeLeft <= 0) {
             gameRunning = false;
             clearInterval(matchTimer);
             setTimeout(() => {
-                alert('Время вышло!');
+                alert(`⏰ Время вышло! Твой счет: ${score}`);
                 gameOver(score);
             }, 100);
         }
@@ -810,12 +961,18 @@ function runMatchGame() {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
-        const col = Math.floor(x / 150);
-        const row = Math.floor(y / 133);
+      
+        const col = Math.floor((x - 10) / 150);
+        const row = Math.floor((y - 10) / 133);
         const idx = row * 4 + col;
         
-        if (idx >= 12 || revealed[idx]) return;
+        if (idx < 0 || idx >= 12 || revealed[idx]) return;
+        
+        const cardX = col * 150 + 10;
+        const cardY = row * 133 + 10;
+        if (x < cardX || x > cardX + 130 || y < cardY || y > cardY + 113) {
+            return; 
+        }
 
         if (first === null) {
             first = idx;
@@ -827,7 +984,7 @@ function runMatchGame() {
             draw();
             canClick = false;
 
-             setTimeout(() => {
+            setTimeout(() => {
                 if (cards[first] === cards[second]) {
                     matches++;
                     score += 10;
@@ -836,8 +993,16 @@ function runMatchGame() {
                     if (matches === 6) {
                         gameRunning = false;
                         clearInterval(matchTimer);
-                        gameOver(score + matchTimeLeft * 5); 
-                        }
+                    
+                        const timeBonus = matchTimeLeft;
+                        const finalScore = score + timeBonus;
+                        
+                        updateScore(finalScore);
+                        
+                        setTimeout(() => {
+                            gameOver(finalScore);
+                        }, 100);
+                    }
                 } else {
                     revealed[first] = false;
                     revealed[second] = false;
@@ -852,33 +1017,48 @@ function runMatchGame() {
     
     function draw() {
         ctx.fillStyle = '#fff0f5';
-        ctx.fillRect(0, 0, canvas.width, canvas.height); 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
         for (let i = 0; i < 12; i++) {
-            const x = (i % 4) * 150 + 10;
-            const y = Math.floor(i / 4) * 133 + 10;
-            
+            const col = i % 4;
+            const row = Math.floor(i / 4);
+            const x = col * 150 + 10;
+            const y = row * 133 + 10;
+          
             if (revealed[i]) {
+               
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(x, y, 130, 113);
                 ctx.strokeStyle = '#ff69b4';
                 ctx.lineWidth = 3;
                 ctx.strokeRect(x, y, 130, 113);
+                
                 ctx.font = '60px Arial';
-                ctx.fillText(cards[i], x + 35, y + 75);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ff69b4';
+                ctx.fillText(cards[i], x + 65, y + 56);
             } else {
+                
                 ctx.fillStyle = '#ffb6c1';
                 ctx.fillRect(x, y, 130, 113);
                 ctx.strokeStyle = '#ff69b4';
                 ctx.lineWidth = 3;
                 ctx.strokeRect(x, y, 130, 113);
+                
+               
+                ctx.font = 'bold 50px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#fff';
-                ctx.font = '40px Arial';
-                ctx.fillText('?', x + 50, y + 70);
+                ctx.fillText('?', x + 65, y + 56);
             }
         }
     }
     
     draw();
+    
+    window.addEventListener('resize', draw);
 }
 
 
@@ -923,7 +1103,7 @@ function runCatchGame() {
         ctx.font = '20px Quicksand';
         ctx.fillText(`❤️ Жизни: ${lives}`, 10, 30);
         
-        if (Math.random() < 0.015) {
+        if (Math.random() < 0.01) {
             balloons.push({ 
                 x: Math.random() * (canvas.width - 30), 
                 y: 0, 
