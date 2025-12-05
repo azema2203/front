@@ -448,8 +448,10 @@ function runDinoGame() {
     let score = 0;
     let player = { x: 50, y: 300, w: 40, h: 40, jumping: false, velocity: 0 };
     let obstacles = [];
-    let nextObstacleDistance = 150 + Math.random() * 150;
-    let distanceTraveled = 0;
+    let obstacleTimer = 0;
+    let minDistance = 200; 
+    let maxDistance = 600; 
+    let nextObstacleDistance = minDistance + Math.random() * (maxDistance - minDistance);
     let gameRunning = true;
     
     function jump() {
@@ -477,6 +479,7 @@ function runDinoGame() {
         ctx.fillStyle = '#fff0f5';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
+       
         ctx.fillStyle = '#ffb6c1';
         ctx.fillRect(0, 340, canvas.width, 5);
         
@@ -489,32 +492,51 @@ function runDinoGame() {
                 player.velocity = 0;
             }
         }
-        
+      
         ctx.font = '40px Arial';
         ctx.fillText(getSkinEmoji(), player.x, player.y + 40);
         
-        distanceTraveled += 5;
-        if (distanceTraveled >= nextObstacleDistance) {
-            obstacles.push({ x: canvas.width, y: 310, w: 30, h: 30 });
-            nextObstacleDistance = 150 + Math.random() * 150;
-            distanceTraveled = 0;
+        obstacleTimer += 5; 
+        
+        if (obstacleTimer >= nextObstacleDistance) {
+            const obstacleTypes = ['🧁', '🍰', '🎂', '🍪', '🍩'];
+            const randomType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            
+            obstacles.push({ 
+                x: canvas.width, 
+                y: 310, 
+                w: 30, 
+                h: 30,
+                type: randomType
+            });
+            
+            nextObstacleDistance = minDistance + Math.random() * (maxDistance - minDistance);
+            obstacleTimer = 0;
         }
         
         obstacles.forEach((obs, i) => {
             obs.x -= 5;
-            ctx.font = '30px Arial';
-            ctx.fillText(['🧁', '🍰', '🎂'][i % 3], obs.x, obs.y + 30);
+            
+            ctx.font = '35px Arial';
+            ctx.fillText(obs.type, obs.x, obs.y + 30);
             
             if (obs.x < player.x + player.w && obs.x + obs.w > player.x &&
                 obs.y < player.y + player.h && obs.y + obs.h > player.y) {
                 gameRunning = false;
-                gameOver(score);
+                setTimeout(() => {
+                    gameOver(score);
+                }, 100);
             }
             
-            if (obs.x < 0) {
+            if (obs.x < -30) {
                 obstacles.splice(i, 1);
                 score++;
                 updateScore(score);
+                
+                if (score % 10 === 0 && minDistance > 150) {
+                    minDistance -= 10;
+                    maxDistance -= 10;
+                }
             }
         });
         
@@ -675,7 +697,7 @@ function runJumpGame() {
     let combo = 0;
     let maxCombo = 0;
     let lastDifficultyIncrease = 0; 
-    
+
     let platform = {
         x: canvas.width / 2 - 80,
         y: canvas.height - 50,
